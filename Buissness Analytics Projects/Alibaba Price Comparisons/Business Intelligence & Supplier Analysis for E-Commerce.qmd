@@ -1,0 +1,487 @@
+---
+title: "Business Intelligence & Supplier Analysis for E-Commerce"
+author: "Shadman Sharar Pervez"
+format: html
+editor: visual
+---
+
+# Section 1
+
+## 1. Identifying the Best Performing Company
+
+```{r}
+# Sample total sales data for each company (in USD Billion)
+amazon_total_sales <- c(320, 310, 330, 340, 335, 325, 328, 345, 310, 322)
+alibaba_total_sales <- c(280, 290, 275, 285, 295, 300, 310, 305, 298, 299)
+ebay_total_sales <- c(150, 160, 155, 148, 152, 158, 165, 159, 151, 150)
+
+# Calculate average total sales
+avg_amazon <- mean(amazon_total_sales)
+avg_alibaba <- mean(alibaba_total_sales)
+avg_ebay <- mean(ebay_total_sales)
+
+# Compare average prices
+if (avg_amazon > avg_alibaba && avg_amazon > avg_ebay) {
+  print("Amazon has the highest average total sales.")
+} else if (avg_alibaba > avg_ebay) {
+  print("Alibaba has the highest average total sales.")
+} else {
+  print("eBay has the highest average total sales.")
+}
+
+```
+
+## 2. Classifying Stock Volatility
+
+```{r}
+# Simulated daily gross margin changes in percentage
+gross_margin_changes <- c(0.2, 2.5, -0.3, 5.1, -1.0, 6.0, 0.5, -2.3, 3.7, -0.1)
+
+# Classify volatility
+for (change in gross_margin_changes) {
+  if (change > 5) {
+    print(paste("Extreme Volatility:", change, "%"))
+  } else if (change > 2) {
+    print(paste("High Volatility:", change, "%"))
+  } else if (change > 0) {
+    print(paste("Moderate Volatility:", change, "%"))
+  } else if (change > -2) {
+    print(paste("Low Volatility:", change, "%"))
+  } else {
+    print(paste("Stable:", change, "%"))
+  }
+}
+```
+
+## 3. Stock Price Monitoring System
+
+```{r}
+current_price <- 1500
+critical_threshold <- 1600
+price_drops <- c(1.5, 2.0, 3.5, 7.0, 0.5)
+
+if (current_price < critical_threshold) {
+  max_drop <- max(price_drops)
+  if (max_drop >= 7) {
+    print("Severe Drop Alert: The stock price has dropped significantly.")
+  } else if (max_drop >= 3) {
+    print("Moderate Drop Alert: The stock price has experienced a moderate drop.")
+  } else {
+    print("Minor Drop: The stock price has only experienced a minor drop.")
+  }
+} else {
+  print("Stock price is above the critical threshold. No action required.")
+}
+
+```
+
+## 4. Analyzing Growth Trends
+
+```{r}
+monthly_sales_growth <- c(3, -2, -3, -4, 1, 2, -1, -2, -3, 4, 5, -2)
+
+consecutive_decline <- 0
+sustained_positive <- 0
+
+for (i in 1:length(monthly_sales_growth)) {
+  if (monthly_sales_growth[i] < 0) {
+    consecutive_decline <- consecutive_decline + 1
+  } else {
+    consecutive_decline <- 0
+  }
+
+  if (monthly_sales_growth[i] > 0) {
+    sustained_positive <- sustained_positive + 1
+  } else {
+    sustained_positive <- 0
+  }
+
+  if (consecutive_decline >= 3) {
+    print(paste("Alert: 3 consecutive declines at month", i))
+  }
+
+  if (sustained_positive >= 3) {
+    print(paste("Notice: 3 months of positive growth ending at month", i))
+  }
+}
+
+```
+
+## 5. Detecting a Financial Recession
+
+```{r}
+# Simulated revenue and gross margin changes over 12 months
+monthly_revenue_growth <- c(2, -3, -4, -2, 1, 0.5, -1, -2.5, -3, -4, 0.3, 1)
+gross_margin_change <- c(0.5, -2, -4, -5, 1, 2, -1, -3.5, -5, -6, 0.1, 0.7)
+
+recession_detected <- FALSE
+
+for (i in 1:(length(monthly_revenue_growth) - 2)) {
+  if (monthly_revenue_growth[i] < 0 &&
+      monthly_revenue_growth[i+1] < 0 &&
+      monthly_revenue_growth[i+2] < 0 &&
+      any(gross_margin_change[i:(i+2)] <= -3)) {
+    
+    print(paste("Recession detected starting at month", i))
+    recession_detected <- TRUE
+    break
+  }
+}
+
+if (!recession_detected) {
+  print("No recession detected.")
+}
+
+```
+
+## 6. Implementing a Stop-Loss Mechanism
+
+```{r}
+# Simulated average order value over time
+average_order_values <- c(120, 115, 110, 105, 100, 95, 90, 85, 80, 78)
+
+# Set stop-loss threshold
+stop_loss_threshold <- 90
+company_name <- "Alibaba"
+
+# Trigger stop-loss
+for (value in average_order_values) {
+  if (value < stop_loss_threshold) {
+    print(paste("Stop-Loss Triggered for", company_name, "- average order value dropped to", value))
+    break
+  }
+}
+```
+
+## 7. Filtering Out Insignificant Fluctuations
+
+```{r}
+# Simulated market share changes in percentage
+market_share_changes <- c(0.3, -0.2, 1.5, 2.1, -1.8, 0.1, 3.0, -0.1, -2.6, 4.2)
+
+# Threshold for significant change
+significance_threshold <- 2.0
+
+for (change in market_share_changes) {
+  if (abs(change) < significance_threshold) {
+    next  # skip insignificant changes
+  }
+  print(paste("Significant market share fluctuation detected:", change, "%"))
+}
+
+```
+
+## 8. Making Investment Decisions
+
+```{r}
+# Sample values
+total_sales <- 350  # USD Billion
+operating_income <- 28  # in %
+
+# Evaluate investment potential
+if (total_sales >= 300 && operating_income >= 25) {
+  print("Investment Recommended: High sales and strong income.")
+} else if (total_sales >= 250 && operating_income >= 15) {
+  print("Investment Considered: Moderate strength.")
+} else if (total_sales >= 200 && operating_income >= 10) {
+  print("Investment Risky: Weak but manageable.")
+} else {
+  print("Investment Not Recommended: Performance too low.")
+}
+```
+
+# Section 2
+
+### 1. **Alibaba's Market Adaptation and Revenue Fluctuations**
+
+**Relevant Text from the Article:**
+
+-   "Alibaba hit the headlines with the world's biggest IPO in September 2014. Today, the company has a market cap among the global top 10, has surpassed Walmart in global sales, and has expanded into all the major markets in the world."
+-   "Smart business emerges when all players in an industry, retail, ride-sharing, etc., are coordinated in an online network and use machine-learning technology to leverage data in real time. This model allows companies to dynamically adapt to changing market conditions and customer preferences, creating significant competitive advantages."
+-   "By analyzing transaction patterns, the algorithm continuously refines credit risk assessments, reducing default rates to around 1%."
+
+**Justification for the Conditional Logic and Loops:**
+
+-   **Loop: `for (i in 1:length(revenue_growth))`**\
+    The loop processes Alibaba's revenue growth data over multiple years. The company operates in a dynamic and competitive market where revenue trends fluctuate. The loop is crucial for detecting patterns and identifying prolonged declines, as highlighted in the case study.
+
+-   **Conditional Statement: `if (revenue_growth[i] < revenue_growth[i - 1])`**\
+    This condition checks for consecutive revenue declines. The case study highlights Alibaba's ability to adapt to market changes. Monitoring declines allows for timely strategic adjustments to maintain competitiveness.
+
+-   **Counter: `declining_years <- declining_years + 1`**\
+    This variable tracks the number of consecutive years of revenue decline. Alibaba's strategy focuses on data-driven decision-making. By counting declines, the company can assess whether intervention is necessary, as described in the case study.
+
+-   **Warning Message: `print("Warning: Alibaba has experienced three consecutive years of revenue decline.")`**\
+    If Alibaba experiences three straight years of revenue decline, an alert is triggered. The case study underscores the importance of real-time data monitoring for decision-making. This aligns with Alibaba's focus on using technology to adapt and prevent long-term losses.
+
+-   **Break Statement: `break`**\
+    Once a significant decline is detected, the loop stops further execution. This ensures immediate attention to the issue, similar to how Alibaba would respond in real-world scenarios by modifying its business strategy.
+
+**Decision-Making Process:**
+
+The loop and conditional logic reflect Alibaba's approach to monitoring revenue trends and adapting to market changes. By analyzing revenue growth data, Alibaba can identify potential risks and take proactive measures to maintain its competitive edge, as described in the case study.
+
+### 2. **Assessing the Financial Viability of Ant Financial Microloans**
+
+**Relevant Text from the Article:**
+
+-   "Ant Financial, launched in 2012, revolutionized SME lending in China. Traditional banks were unwilling to serve small businesses lacking credit histories. Alibaba leveraged transaction data to create a data-driven microloan business, issuing loans as small as several hundred RMB in minutes. By analyzing transaction patterns, the algorithm continuously refines credit risk assessments, reducing default rates to around 1%."
+
+**Justification for the Conditional Logic:**
+
+-   **Condition 1: `transaction_volume > 30000`**\
+    This condition reflects Alibaba's reliance on transaction data to assess the financial health of small businesses. A high transaction volume indicates active business operations, which is a key factor in determining loan eligibility.
+
+-   **Condition 2: `monthly_revenue > 10000`**\
+    Monthly revenue is another crucial indicator of a business's ability to repay a loan. Alibaba's data-driven approach ensures that only businesses with sufficient revenue streams are approved for loans.
+
+-   **Condition 3: `repayment_history == TRUE`**\
+    A positive repayment history is essential for assessing creditworthiness. Alibaba's algorithm uses historical data to evaluate the likelihood of timely repayments.
+
+**Decision-Making Process:**
+
+The `if-else` statement mimics Alibaba's decision-making process for loan approvals. If all conditions are met, the loan is approved, reflecting Alibaba's ability to dynamically adapt to real-time data and make quick, informed decisions.
+
+### 3. **Detecting High-Risk Borrowers in Ant Financial**
+
+**Relevant Text from the Article:**
+
+-   "By analyzing transaction patterns, the algorithm continuously refines credit risk assessments, reducing default rates to around 1%."
+-   "Alibaba leveraged transaction data to create a data-driven microloan business, issuing loans as small as several hundred RMB in minutes."
+
+**Justification for the Conditional Logic:**
+
+-   **Condition 1: `default_rate > 0.2`**\
+    This condition identifies borrowers with a very high risk of default. Alibaba's algorithm uses historical transaction data to assess default rates.
+
+-   **Condition 2: `default_rate > 0.1 | repayment_score < 60`**\
+    This condition targets borrowers with a high risk of default or a low repayment score. Alibaba's data-driven approach evaluates both default rates and repayment behavior.
+
+-   **Condition 3: `default_rate > 0.05 | repayment_score < 75`**\
+    This condition identifies borrowers with moderate risk. Alibaba's algorithm uses a combination of default rates and repayment scores to categorize borrowers.
+
+-   **Else Condition: `risk_level <- "Low Risk"`**\
+    Borrowers who do not meet any of the above conditions are classified as "Low Risk." This reflects Alibaba's ability to identify and prioritize low-risk borrowers.
+
+**Decision-Making Process:**
+
+The `if-else` structure mirrors Alibaba's approach to dynamically assessing borrower risk levels. By evaluating multiple factors, the algorithm ensures accurate risk categorization.
+
+### 4. **Monitoring Stock Price Fluctuations in Alibaba's Ecosystem**
+
+**Relevant Text from the Article:**
+
+-   "Alibaba hit the headlines with the world's biggest IPO in September 2014. Today, the company has a market cap among the global top 10, has surpassed Walmart in global sales, and has expanded into all the major markets in the world."
+-   "Smart business emerges when all players in an industry, retail, ride-sharing, etc., are coordinated in an online network and use machine-learning technology to leverage data in real time."
+
+**Justification for the Conditional Logic and Loop:**
+
+-   **Loop: `for (change in stock_changes)`**\
+    The loop iterates through each value in the `stock_changes` vector, reflecting Alibaba's need to continuously monitor market conditions in real time.
+
+-   **Condition 1: `abs(change) > 6`**\
+    This condition detects extreme volatility in stock prices. Alibaba must respond quickly to significant market changes to protect its ecosystem.
+
+-   **Condition 2: `abs(change) > 3`**\
+    This condition identifies moderate fluctuations in stock prices. Monitoring moderate changes helps Alibaba take proactive measures to mitigate risks.
+
+-   **Else Condition: `Market stable.`**\
+    If the stock price changes are within a stable range, the market is considered stable. This reflects Alibaba's ability to maintain equilibrium in its ecosystem.
+
+**Decision-Making Process:**
+
+The `if-else` structure within the loop allows Alibaba to dynamically assess and respond to stock price fluctuations. By categorizing changes, Alibaba can make informed decisions to protect its ecosystem.
+
+### 5. **Decision Making for Investment in Alibaba's Subsidiaries**
+
+**Relevant Text from the Article:**
+
+-   "Alibaba's Major Businesses: Retail Marketplaces (Taobao, Tmall, Rural Taobao), Global Marketplaces (AliExpress, Lazada), Digital Media & Entertainment (Youku Tudou, Alibaba Pictures, UC Browser), Financial Services (Ant Financial, Alipay, MYbank), Logistics (Cainiao Network), Cloud Computing (Alibaba Cloud)."
+-   "Smart business emerges when all players in an industry, retail, ride-sharing, etc., are coordinated in an online network and use machine-learning technology to leverage data in real time."
+
+**Justification for the Conditional Logic:**
+
+-   **Condition 1: `alibaba_cloud_growth > taobao_growth & alibaba_cloud_growth > tmall_growth`**\
+    This condition evaluates whether Alibaba Cloud has the highest growth potential compared to Taobao and Tmall. Investing in the subsidiary with the highest growth potential aligns with Alibaba's strategy.
+
+-   **Condition 2: `taobao_growth > tmall_growth`**\
+    This condition assesses whether Taobao has stronger growth compared to Tmall. Investing in Taobao reflects Alibaba's focus on maintaining its dominance in e-commerce.
+
+-   **Else Condition: `Invest in Tmall: Balanced profitability and stability.`**\
+    If neither Alibaba Cloud nor Taobao shows the highest growth, the decision defaults to investing in Tmall. Tmall represents a balance between profitability and stability.
+
+**Decision-Making Process:**
+
+The `if-else` structure reflects Alibaba's data-driven approach to investment decisions. By comparing growth metrics across subsidiaries, Alibaba can allocate resources strategically to maximize returns.
+
+# Section 3
+
+### 1. Product Profitability Analysis (5 marks)
+
+Supplier 1: [Link](https://www.alibaba.com/product-detail/Original-Wholesale-Wireless-Controller-BT-Video_1600684477439.html?spm=a2700.galleryofferlist.normal_offer.d_title.3dc213a0g0nkXT)
+
+Supplier 2: [Link](https://www.alibaba.com/product-detail/Wholesale-Original-Wireless-Controller-BT-Video_1600870007948.html?spm=a2700.galleryofferlist.normal_offer.d_title.3dc213a0g0nkXT)
+
+Supplier 3: [Link](https://www.alibaba.com/product-detail/New-Original-XBOX-Series-S-X_1600883527199.html?spm=a2700.galleryofferlist.normal_offer.d_title.3dc213a0g0nkXT)
+
+Amazon pricing: [Link](https://www.amazon.com/Wireless-Controller-Robot-VGSION-Battery/dp/B08XPY3K9Q?crid=1B75I3FE62DXT&dib=eyJ2IjoiMSJ9._29IQbiQYIKCF1dIE287E0k7BddD6hqPaTgPTgQZ9LW79DGvej2wCFB07b2FeIvmwwTskzVCXMkDSzVXqX0Yus2B5lEBatmA8m4GxmPoYO_WXFnygVC4PnuvkI-ZqQi5j3ZJMHDKVMruM0PByZ6XmiF907-xHjW-96-dk4_YmO6HukZ7b6yUdH0nxcIKYLUCICoZcWG37vo6X2x_rFaqVeQjqfI7QFyN4QZCl31Rabo.mIRDx_PZw6vVZ_Zwn0G3efz2yZ203VjOuP1I33dsW9M&dib_tag=se&keywords=Controllers+for+Xbox+Series+S%2FX&qid=1743230754&sprefix=controllers+for+xbox+series+s%2Fx%2Caps%2C489&sr=8-1)
+
+```{r}
+# Product information(prices all in USD)
+product_name <- "Microsoft Xbox Series S or X Wireless Controller"
+amazon_price <- 63.88  # Amazon selling price in USD
+
+# Supplier data from Alibaba (3 suppliers)
+suppliers <- c("Shenzhen Xiting Electronic Co., Ltd.", "Foshan Cooao Electronic Technology Co., Ltd.", "Shenzhen Usmartall Technology Co., Ltd.")
+alibaba_prices <- c(36.86, 49.90, 37.00)  # Purchase prices per unit (varies based on bulk)
+
+# Define the function to calculate profit margin
+calculate_profit_margin <- function(cost_price, selling_price) {
+  return((selling_price - cost_price) / cost_price * 100)  # Profit margin as percentage
+}
+
+# Define a threshold for high profitability (e.g., 50% margin)
+profit_margin_threshold <- 50
+
+# Loop to evaluate each supplier
+for (i in 1:length(suppliers)) {
+  # Calculate the profit margin for the current supplier
+  profit_margin <- calculate_profit_margin(alibaba_prices[i], amazon_price)
+  
+  # Print results if profit margin exceeds threshold
+  if (profit_margin > profit_margin_threshold) {
+    cat(paste(suppliers[i], "is highly profitable with a profit margin of", round(profit_margin, 2), "%\n"))
+  } else {
+    cat(paste(suppliers[i], "is not profitable enough with a profit margin of", round(profit_margin, 2), "%\n"))
+  }
+}
+```
+
+### 2. Supplier Sample Evaluation (5 marks)
+
+```{r}
+product_name <- "Microsoft Xbox Series S or X Wireless Controller"
+
+suppliers <- c("Shenzhen Xiting Electronic Co., Ltd.", "Foshan Cooao Electronic Technology Co., Ltd.", "Shenzhen Usmartall Technology Co., Ltd.")
+quality_ratings <- c(5.0, 4.8, 5.0)  # Simulated ratings for each supplier
+
+evaluate_quality <- function(rating) {
+  if (rating <= 2.5) {
+    return("Low Quality")
+  } else if (rating > 2.5 & rating <= 3.8) {
+    return("Moderate Quality")
+  } else if (rating > 3.8) {
+    return("High Quality")
+  } else {
+    return("Invalid Rating")
+  }
+}
+
+
+for (i in 1:length(suppliers)) {
+  quality_status <- evaluate_quality(quality_ratings[i])
+  if (quality_status == "Low Quality") {
+    cat(paste(suppliers[i], "has provided a Low Quality sample. Contact the supplier for improvements.\n"))
+    break  
+  } else {
+    cat(paste(suppliers[i], "has provided a", quality_status, "Product sample.\n"))
+  }
+}
+```
+
+### 3. Customer Feedback Analysis (5 marks)
+
+```{r}
+reviews <- c(
+  "Best controller among all. I’ve used some others, but found this original ones the best of all.",
+  "It did not come with a rechargeable battery, just 2 regular ones. I did notice if you read down below it says it comes with VGSION easy open shipping package. Vgsion authorized only. Xbox does not make a 'plus' version so the wording 'plus' vgsion battery. Implies it comes with a battery. I was actually unable to find that brand of battery for a controller. But since it's the same price as the controller and battery from Microsoft combined it was obviously expected to come with a rechargeable battery. This is a blatant play on words and I would refuse to buy ant product from a company that deploys a strategy such as this. Needless to say it is being returned.",
+  "DOES NOT COME WITH THE VGSION BATTERY AS ADVERTISED. Reading through the reviews I can see that other buyers had the exact same issue. Reported it to Amazon and they sent a replacement WHICH ALSO DID NOT HAVE THE BATTERY. I guess it's cool to have two controllers for the price of one, but I still need to acquire a damn battery.
+
+The controller itself is outstanding, obviously. These things seem indestructible and last a long time.",
+  "Nice controller, but the gamepass ultimate 2 weeks code was missing, likely stolen.",
+  "Controller was not damaged and looked brand new. However, the box holding the controller was very damaged. Made it very concerning to open and see how the controller's condition was. Luckily the controller was not damaged and works properly."
+)
+
+ratings <- c(5, 1, 4, 5, 3)
+classify_review <- function(rating) {
+  if (rating <= 2) {
+    return("Negative")
+  } else if (rating == 3) {
+    return("Neutral")
+  } else {
+    return("Positive")
+  }
+}
+
+for (i in 1:length(reviews)) {
+  review_class <- classify_review(ratings[i])
+  if (review_class == "Negative") {
+    # Print the review issue
+    cat(paste("Negative Review:", reviews[i], "\n"))
+    cat("Summary: Customer is unhappy with the product's performance.\n\n")
+  } else {
+    cat(paste("Review", i, "is classified as", review_class, "\n"))
+  }
+}
+```
+
+### 4. Comparison Between Alibaba and Amazon for Your Chosen Product (6 marks)
+
+#### 1. **Profitability Analysis**
+
+**Profit Margins from Alibaba Suppliers:**
+
+-   **Shenzhen Xiting Electronic Co., Ltd.**: 73.3%
+-   **Foshan Cooao Electronic Technology Co., Ltd.**: 28.02%
+-   **Shenzhen Usmartall Technology Co., Ltd.**: 72.65%
+
+**Analysis:**
+
+-   The **highest profit margin** is offered by **Shenzhen Xiting Electronic Co., Ltd.** (73.3%) and **Shenzhen Usmartall Technology Co., Ltd.** (72.65%).
+-   **Foshan Cooao** offers a **much lower profit margin** of **28.02%**, which is not as favorable for high-profit margins.
+
+#### 2. **Quality Assessment**
+
+**Sample Quality Ratings from Alibaba Suppliers:**
+
+-   **Shenzhen Xiting**: 5.0/5
+-   **Foshan Cooao**: 4.8/5
+-   **Shenzhen Usmartall**: 5.0/5
+
+**Amazon Customer Feedback:**
+
+-   **Average Rating on Amazon**: 4.3/5\
+-   Positive reviews praise the controller for its **comfort**, **responsiveness**, and **performance**.
+-   Negative reviews mention **connectivity issues** and occasional **durability concerns**.
+
+**Analysis:**
+
+-   **Shenzhen Xiting** and **Shenzhen Usmartall** both have **perfect ratings (5.0/5)**, which suggests **excellent quality** from these suppliers.
+-   **Foshan Cooao** has a very high rating of **4.8/5**, which also indicates high quality.
+-   Compared to Amazon's **4.3/5**, all Alibaba suppliers have better ratings, suggesting they provide higher quality products.
+
+#### 3. **Customer Feedback Analysis**
+
+**Common Issues from Amazon Reviews:**
+
+-   **Connectivity Issues**: Some users report issues with syncing the controller.
+-   **Durability**: A few customers mention that the controller wears out or has problems after a certain period of use.
+
+**Positive Aspects:**
+
+-   **Comfort**: Highly praised for its ergonomic design.
+-   **Responsiveness**: Customers generally find the controller very responsive and easy to use.
+
+**Comparison with Alibaba Supplier Ratings:**
+
+-   Both **Shenzhen Xiting** and **Shenzhen Usmartall** offer **excellent quality** (5.0/5), which may align with the positive feedback on **comfort** and **responsiveness** from Amazon reviews.
+-   **Foshan Cooao** with a **4.8/5** rating suggests slightly less quality but still comparable to the positive Amazon reviews.
+-   The **connectivity** and **durability issues** noted by Amazon users may be due to individual cases or shipping/handling issues rather than inherent product quality, as Alibaba suppliers show higher ratings.
+
+#### **Conclusion**
+
+-   **Profitability**: **Shenzhen Xiting** and **Shenzhen Usmartall** offer **high profit margins**, making them highly profitable. **Foshan Cooao** has a much lower profit margin, which may not be as beneficial for business profitability.
+-   **Quality**: The **quality ratings** from Alibaba suppliers are **better** than the **4.3/5 rating** from Amazon, with **Shenzhen Xiting** and **Shenzhen Usmartall** offering **perfect ratings (5.0/5)**.
+-   **Customer Feedback**: **Amazon feedback** is generally positive, but it mentions **connectivity** and **durability** issues, which may not reflect the **high quality** ratings from Alibaba suppliers.
+
+**Recommendation**: Based on **profitability** and **product quality**, **Shenzhen Xiting** and **Shenzhen Usmartall** are the **best options** from Alibaba, offering both **high profit margins** and **excellent product quality**. If **quality** is a priority, these suppliers align well with positive customer feedback on Amazon, despite some occasional negative reviews.

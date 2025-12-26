@@ -1,0 +1,801 @@
+---
+title: "Employee Performance & Attrition Analysis"
+author: "Shadman Sharar Pervez"
+format: html
+editor: visual
+---
+
+#### Load required libraries
+
+```{r}
+library(tidyr)   
+library(dplyr)  
+library(ggplot2) 
+```
+
+#### Load the csv files
+
+```{r}
+
+# Read the employee dataset
+employee_data <- read.csv("employee.csv")
+# Read the performance dataset
+performance_data <- read.csv("performance.csv")
+```
+
+## **SECTION A DATA CLEANING, MANIPULATION & PIVOTING**
+
+### 1. DATA CLEANING
+
+Let us see what is the structure of the dataset and the data types of the different attributes.
+
+```{r}
+# Show original structure of the dataset
+str(employee_data)
+print(head(employee_data, 10))
+```
+
+```{r}
+summary(employee_data)
+```
+
+After looking through the dataset, we see that there are quite a few missing values. To ensure that we can handle each missing value, we will check for missing values in each column. In this dataset, there are also empty string which should be NA.
+
+```{r}
+# Check for missing values using dplyr
+missing_values <- employee_data %>%
+  summarise(across(everything(), ~sum(is.na(.)) + if (is.character(.)) sum(. == "") else 0))
+
+missing_values
+```
+
+#### **CLEANING METHOD 1:** Imputation of values into age column, department names and salary.
+
+#### Imputation of values into age column
+
+**Description:** This method estimates missing values in the 'Age' column by leveraging the 'Years_of_Experience' variable. In HR contexts, age often correlates with work experience. Instead of using statistical imputation like mean or median, we estimate age logically: assuming individuals typically start their careers around age 20, with a ±4 year variation to account for early or late starters (e.g., post-secondary education or late entry).
+
+```{r}
+
+cat("\n\nCLEANING METHOD 1: Handle missing values in Age column\n")
+cat("Before cleaning - Number of missing Age values:", sum(is.na(employee_data$Age)), "\n")
+
+# Function to estimate age based on years of experience
+estimate_age <- function(yoe) {
+  # Estimated starting age: 20 ± random variation
+  return(20 + yoe + sample(-4:4, 1))
+}
+
+# Impute missing Age values using estimate_age function
+cleaned_employee_data_1 <- employee_data %>%
+  rowwise() %>%
+  mutate(Age = ifelse(is.na(Age), estimate_age(Years_of_Experience), Age)) %>%
+  ungroup()
+
+cat("After cleaning - Number of missing Age values:", sum(is.na(cleaned_employee_data_1$Age)), "\n")
+```
+
+```{r}
+cleaned_employee_data_1
+```
+
+#### Impute Department names using department IDs
+
+**Description:** This method repairs missing or blank department names by leveraging the department ID as a reliable reference point. First, it identifies the most common department name associated with each unique department ID across the dataset. Then, it applies this majority-rule naming to fill in missing values, ensuring consistency in departmental classification. This approach recognizes that while department names might vary slightly in how they're entered (abbreviations, typos, etc.), the underlying department ID remains a consistent organizational identifier. By standardizing department names based on ID associations, the method preserves the original organizational structure while eliminating gaps in categorical data essential for accurate HR analytics and reporting.
+
+```{r}
+# Preview counts before cleaning
+cleaned_employee_data_1 %>% 
+  count(Department_Name, sort = TRUE) %>% 
+  print(count = Inf)
+```
+
+```{r}
+# Step 1: Create a reference table of most common Department_Name per Department_ID
+dept_mode <- cleaned_employee_data_1 %>%
+  filter(!is.na(Department_Name)) %>%
+  group_by(Department_ID, Department_Name) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  group_by(Department_ID) %>%
+  slice_max(n, n = 1, with_ties = FALSE) %>%
+  ungroup()
+
+# Step 2: Add most common department name as a helper column based on Department_ID
+cleaned_employee_data_1 <- cleaned_employee_data_1 %>%
+  group_by(Department_ID) %>%
+  mutate(Most_Common_Dept = dept_mode$Department_Name[match(Department_ID, dept_mode$Department_ID)]) %>%
+  ungroup()
+
+# Step 3: Impute missing or blank values using the helper column
+cleaned_employee_data_2 <- cleaned_employee_data_1 %>%
+  mutate(Department_Name = if_else(is.na(Department_Name) | Department_Name == "", 
+                                   Most_Common_Dept, 
+                                   Department_Name)) %>% select(-Most_Common_Dept)
+```
+
+```{r}
+
+# Final check
+cat("\nAfter cleaning - Final Department Name counts:\n")
+cleaned_employee_data_2 %>%
+  count(Department_Name, sort = TRUE) %>%
+  print(n = Inf)
+
+cat("\nMissing Department Names after cleaning:", sum(is.na(cleaned_employee_data_2$Department_Name)), "\n")
+```
+
+```{r}
+cleaned_employee_data_2
+```
+
+#### Imputing Salary based on the department name and years of experience
+
+**Description:** This method imputes missing salary values using department averages adjusted by years of experience. In HR analytics, this approach is preferred because salaries naturally vary by department due to different budgets and market rates, while experience level is a strong predictor of compensation within departments. By combining these factors, we maintain the organization's existing compensation structure and fairness principles, producing more accurate and useful data for HR decision-making than simple global averages would provide. This preserves meaningful salary patterns essential for valid compensation analysis, equity assessments, and workforce planning.
+
+```{r}
+salary_summary_before <- cleaned_employee_data_2 %>%
+  summarise(
+    Min = min(Salary, na.rm = TRUE),
+    Q1 = quantile(Salary, 0.25, na.rm = TRUE),
+    Median = median(Salary, na.rm = TRUE),
+    Mean = mean(Salary, na.rm = TRUE),
+    Q3 = quantile(Salary, 0.75, na.rm = TRUE),
+    Max = max(Salary, na.rm = TRUE),
+    NA_Count = sum(is.na(Salary))
+  )
+salary_summary_before
+```
+
+```{r}
+# Group and summarize salary by department to identify potential outliers
+salary_by_dept <- cleaned_employee_data_2 %>%
+  group_by(Department_Name) %>%
+  summarise(
+    Min_Salary = min(Salary, na.rm = TRUE),
+    Q1_Salary = quantile(Salary, 0.25, na.rm = TRUE),
+    Q3_Salary = quantile(Salary, 0.75, na.rm = TRUE),
+    Max_Salary = max(Salary, na.rm = TRUE)
+  )
+
+print(salary_by_dept)
+```
+
+```{r}
+# For any remaining NAs, use a different approach
+# Categorize employees by experience level within departments
+cleaned_employee_data <- cleaned_employee_data_2 %>%
+  mutate(
+    Experience_Level = case_when(
+      Years_of_Experience < 3 ~ "Junior",
+      Years_of_Experience < 7 ~ "Mid-level",
+      TRUE ~ "Senior"
+    )
+  )
+```
+
+```{r}
+cleaned_employee_data <- cleaned_employee_data %>%
+  group_by(Department_Name) %>%
+  mutate(
+    Dept_Avg_Salary = mean(Salary, na.rm = TRUE)
+  ) %>%
+  ungroup() %>%
+  # Complete imputation for any remaining NAs
+  mutate(
+    Salary = ifelse(is.na(Salary), 
+                   Dept_Avg_Salary * (1 + (Years_of_Experience / 20) - 0.5),
+                   Salary),
+    # Handle negative values or zero salaries (if any)
+    Salary = ifelse(Salary <= 0,
+                   Dept_Avg_Salary * 0.7,  # Set to 70% of dept average
+                   Salary)
+  ) %>%
+  select(-Dept_Avg_Salary, -Experience_Level)  # Clean up temporary columns
+```
+
+```{r}
+# Summary after cleaning
+cat("\nAfter cleaning - Summary of Salary column:\n")
+salary_summary_after <- cleaned_employee_data %>%
+  summarise(
+    Min = min(Salary, na.rm = TRUE),
+    Q1 = quantile(Salary, 0.25, na.rm = TRUE),
+    Median = median(Salary, na.rm = TRUE),
+    Mean = mean(Salary, na.rm = TRUE),
+    Q3 = quantile(Salary, 0.75, na.rm = TRUE),
+    Max = max(Salary, na.rm = TRUE),
+    NA_Count = sum(is.na(Salary))
+  )
+print(salary_summary_after)
+```
+
+```{r}
+
+# Examine the structure of the dataset after cleaning
+cat("\nStructure of the dataset after cleaning:\n")
+str(employee_data)
+cleaned_employee_data # Final cleaned and imputed dataset
+```
+
+#### CLEANING METHOD 2: Fix outliers using department-specific IQR method for salary
+
+**Description:** This code identifies and removes salary outliers using the IQR (Interquartile Range) method. It calculates lower and upper bounds (Q1 - 1.5\*IQR and Q3 + 1.5\*IQR), filters out values outside this range, and compares data before/after cleaning.
+
+**Why use this method?**
+
+-   IQR is robust to extreme values unlike standard deviation.
+
+-   Removes unrealistic or erroneous salary data that could skew analysis.
+
+-   Preserves the central distribution while eliminating extreme outliers.
+
+The code maintains the original data (**`origial_data`**) while creating a cleaned version for analysis.
+
+```{r}
+origial_data <-cleaned_employee_data
+# Calculate IQR and bounds for Salary
+IQR_Salary <- IQR(cleaned_employee_data$Salary, na.rm = TRUE)
+Q1 <- quantile(cleaned_employee_data$Salary, 0.25, na.rm = TRUE)
+Q3 <- quantile(cleaned_employee_data$Salary, 0.75, na.rm = TRUE)
+
+lower_bound <- Q1 - 1.5 * IQR_Salary
+upper_bound <- Q3 + 1.5 * IQR_Salary
+
+# Display IQR and bounds
+cat("Salary IQR:", IQR_Salary, "\n")
+cat("Lower bound:", lower_bound, "\n")
+cat("Upper bound:", upper_bound, "\n")
+
+# Original data with outliers
+boxplot(cleaned_employee_data$Salary,
+        main = "Original Salary Distribution With Outliers",
+        ylab = "Salary")
+
+# Show original row count
+cat("\nNumber of rows before outlier removal:", nrow(cleaned_employee_data), "\n")
+cat("Lower outliers:", sum(cleaned_employee_data$Salary < lower_bound), "\n")
+cat("Upper outliers:", sum(cleaned_employee_data$Salary > upper_bound), "\n")
+```
+
+```{r}
+# Remove outliers (create new dataframe without modifying original)
+cleaned_employee_data <- cleaned_employee_data %>% 
+  filter(Salary >= lower_bound & Salary <= upper_bound)
+
+# Data without outliers
+boxplot(cleaned_employee_data$Salary,
+        main = "Salary Distribution Without Outliers",
+        ylab = "Salary")
+
+# Show results after removal
+cat("\nNumber of rows after outlier removal:", nrow(cleaned_employee_data), "\n")
+cat("Rows removed:", nrow(cleaned_employee_data) - nrow(cleaned_employee_data), "\n")
+
+# Compare summary statistics
+cat("\nOriginal Salary Summary:\n")
+print(summary(origial_data$Salary))
+
+cat("\nFiltered Salary Summary (no outliers):\n")
+print(summary(cleaned_employee_data$Salary))
+```
+
+```{r}
+cleaned_employee_data
+```
+
+#### CLEANING METHOD 3: Statistical Quality Assessment (Z-scores)
+
+**Description:** Here we use **z-scores** to detect and remove outliers in numeric columns (Age, Experience, Salary). Values beyond **±3 standard deviations** are flagged as extreme and filtered out.
+
+**Why?**
+
+-   Z-scores standardize data, making outlier detection objective.
+
+-   Removes distortions for more reliable statistics and models.
+
+-   Works best for near-normal distributions.
+
+**Result:** A cleaner dataset with fewer skewed values, improving analysis accuracy. The output shows removed rows for transparency.
+
+```{r}
+str(cleaned_employee_data)
+```
+
+```{r}
+# Function to calculate z-scores
+calculate_z_scores <- function(df, column) {
+  mean_value <- mean(df[[column]], na.rm = TRUE)
+  sd_value <- sd(df[[column]], na.rm = TRUE)
+  z_scores <- (df[[column]] - mean_value) / sd_value
+  return(z_scores)
+}
+
+# Apply z-score calculation for each numeric column
+cleaned_employee_data$Age_ZScore <- calculate_z_scores(cleaned_employee_data, "Age")
+cleaned_employee_data$Years_of_Experience_ZScore <- calculate_z_scores(cleaned_employee_data, "Years_of_Experience")
+cleaned_employee_data$Salary_ZScore <- calculate_z_scores(cleaned_employee_data, "Salary")
+
+# Flag extreme outliers (z > 3 or z < -3)
+cleaned_employee_data$Age_Outlier <- ifelse(abs(cleaned_employee_data$Age_ZScore) > 3, TRUE, FALSE)
+cleaned_employee_data$Years_of_Experience_Outlier <- ifelse(abs(cleaned_employee_data$Years_of_Experience_ZScore) > 3, TRUE, FALSE)
+cleaned_employee_data$Salary_Outlier <- ifelse(abs(cleaned_employee_data$Salary_ZScore) > 3, TRUE, FALSE)
+
+# Count of outliers in each column
+outlier_counts <- c(
+  Age = sum(cleaned_employee_data$Age_Outlier),
+  Years_of_Experience = sum(cleaned_employee_data$Years_of_Experience_Outlier),
+  Salary = sum(cleaned_employee_data$Salary_Outlier)
+)
+print("Number of outliers detected:")
+print(outlier_counts)
+```
+
+```{r}
+# Create a clean dataset by removing rows with any outliers
+data_zclean <- cleaned_employee_data[!cleaned_employee_data$Age_Outlier & !cleaned_employee_data$Years_of_Experience_Outlier & !cleaned_employee_data$Salary_Outlier, ]
+
+# Display cleaned data
+head(data_zclean[, c("Age", "Years_of_Experience", "Salary")])
+
+# Summary statistics after outlier removal
+summary(data_zclean[, c("Age", "Years_of_Experience", "Salary")])
+
+# Compare row counts
+cat("\nOriginal dataset rows:", nrow(cleaned_employee_data), "\n")
+cat("Cleaned dataset rows:", nrow(data_zclean), "\n")
+cat("Rows removed:", nrow(cleaned_employee_data) - nrow(data_zclean), "\n")
+```
+
+```{r}
+str(data_zclean)
+```
+
+### 2. DATA MANIPULATION
+
+#### Manipulate the Age column - Create age groups
+
+**Justification:** Age grouping transforms raw ages into meaningful career-stage categories, enabling HR to analyze demographic patterns, identify succession risks, and tailor development programs to specific career stages. This provides strategic insights for workforce planning that individual age values alone cannot offer.
+
+```{r}
+cleaned_employee_data <- cleaned_employee_data %>%
+  mutate(Age_Group = case_when(
+    Age < 25 ~ "Junior (< 25)",
+    Age >= 25 & Age < 35 ~ "Early-career (25-34)",
+    Age >= 35 & Age < 45 ~ "Mid-career (35-44)",
+    Age >= 45 & Age < 55 ~ "Senior (45-54)",
+    Age >= 55 ~ "Pre-retirement (55+)"
+  ))
+```
+
+```{r}
+# Show the result after manipulation using dplyr
+cat("Age Groups Distribution:\n")
+age_group_distribution <- cleaned_employee_data %>%
+  group_by(Age_Group) %>%
+  summarise(Count = n()) %>%
+  arrange(Age_Group)
+
+print(age_group_distribution)
+```
+
+```{r}
+cleaned_employee_data #dataset with age grouping
+```
+
+```{r}
+# Get age distribution by department
+age_dept_distribution <- cleaned_employee_data %>%
+  group_by(Department_Name, Age_Group) %>%
+  summarise(Count = n(), .groups = "drop") %>%
+  arrange(Department_Name, Age_Group)
+
+print(age_dept_distribution)
+```
+
+### 3. DATA PIVOTING
+
+```{r}
+# Pivot based on Department_Name
+# Justification: Creating a pivot table based on departments allows HR to compare
+# key metrics across different organizational units for strategic decision-making
+
+
+# First create summary statistics by department and age group
+dept_summary <- cleaned_employee_data %>%
+  group_by(Department_Name, Age_Group) %>%
+  summarise(
+    Avg_Salary = mean(Salary, na.rm = TRUE),
+    Avg_Years_Experience = mean(Years_of_Experience, na.rm = TRUE),
+    Employee_Count = n(),
+    .groups = "drop"
+  ) %>%
+  arrange(Department_Name, Age_Group)
+
+# Display the summary table
+cat("Department Analysis by Age Group:\n")
+print(dept_summary)
+```
+
+```{r}
+# Pivot wider to show age groups as columns with employee counts
+pivot_count <- cleaned_employee_data %>%
+  count(Department_Name, Age_Group) %>%
+  pivot_wider(
+    names_from = Age_Group,
+    values_from = n,
+    values_fill = 0
+  )
+
+cat("\nPivot Table - Employee Count by Department and Age Group:\n")
+print(pivot_count)
+```
+
+```{r}
+# Create another pivot table for average salary by department and age group
+pivot_salary <- cleaned_employee_data %>%
+  group_by(Department_Name, Age_Group) %>%
+  summarise(Avg_Salary = mean(Salary, na.rm = TRUE), .groups = "drop") %>%
+  pivot_wider(
+    names_from = Age_Group,
+    values_from = Avg_Salary,
+    values_fill = NA
+  )
+
+cat("\nPivot Table - Average Salary by Department and Age Group:\n")
+print(pivot_salary)
+```
+
+## **SECTION B DATA JOINING, FILTERING, GROUPING AND AGGREGATION**
+
+```{r}
+nrow(cleaned_employee_data)
+```
+
+```{r}
+summary(performance_data)
+```
+
+```{r}
+str(performance_data)
+```
+
+```{r}
+nrow(performance_data)
+```
+
+```{r}
+# Using LEFT JOIN to maintain all employee records from the cleaned dataset
+joined_data <- left_join(cleaned_employee_data, performance_data, by = "Employee_ID")
+joined_data
+```
+
+### JOIN Justification
+
+We use a **`LEFT JOIN`** with **`cleaned_employee_data`** as the left table to:
+
+-   Preserve all cleaned employee records (our primary focus)
+
+-   Match available performance data where it exists
+
+-   Keep employee information intact even if performance data is missing
+
+**Key Reasons:**
+
+1.  Our analysis is employee-centric (fewer rows after cleaning)
+2.  Maintains complete employee records from the cleaned dataset
+3.  Performance metrics become optional supplemental information
+4.  Missing performance data will appear as NA values for investigation
+
+```{r}
+nrow(joined_data)
+```
+
+```{r}
+colSums(is.na(joined_data))
+```
+
+We see that there are no NAs for the joined dataset.
+
+### OUTPUT 1: List of employees in Engineering or IT departments with more than 5 years of experience and Excellent performance rating
+
+```{r}
+cat("\n\nOUTPUT 1: Engineers/IT with >5 years experience and Excellent rating\n")
+output1 <- joined_data %>%
+  filter(
+    Department_Name %in% c("Engineering", "IT"),
+    Years_of_Experience > 5,
+    Performance_Rating == "Excellent"
+  ) %>%
+  select(Employee_ID, Name, Department_Name, Years_of_Experience, Performance_Rating)
+
+output1
+
+```
+
+### OUTPUT 2: Count of employees by department with incomplete training and high attrition risk
+
+```{r}
+output2 <- joined_data %>%
+  filter(
+    Training_Completed == "No",
+    Attrition_Risk == "High"
+  ) %>%
+  group_by(Department_Name) %>%
+  summarise(Number_of_Employees = n()) %>%
+  arrange(desc(Number_of_Employees))
+
+print(output2)
+```
+
+### OUTPUT 3: Top 5 highest-paid employees promoted in 2024 with low attrition risk
+
+```{r}
+output3 <- joined_data %>%
+  filter(
+    Last_Promotion_Year == 2024,
+    Attrition_Risk == "Low"
+  ) %>%
+  arrange(desc(Salary)) %>%
+  head(5) %>%
+  select(Employee_ID, Name, Department_Name, Salary, Last_Promotion_Year, Attrition_Risk)
+
+output3
+```
+
+### OUTPUT 4: Average years of experience for each performance rating category
+
+```{r}
+output4 <- joined_data %>%
+  group_by(Performance_Rating) %>%
+  summarise(Average_Years_Experience = mean(Years_of_Experience, na.rm = TRUE)) %>%
+  arrange(desc(Average_Years_Experience))
+
+output4
+```
+
+### OUTPUT 5: Employees under 30 promoted in 2023 or 2024, categorized by department and training status
+
+#### Number of employees for each department
+
+```{r}
+output5 <- joined_data %>%
+  filter(
+    Age < 30,
+    Last_Promotion_Year %in% c(2023, 2024)
+  ) %>%
+  group_by(Department_Name, Training_Completed) %>%
+  summarise(Number_of_Employees = n(), .groups = "drop") %>%
+  arrange(Department_Name, Training_Completed)
+
+output5
+```
+
+#### Additional detailed output 5 showing the actual employees
+
+```{r}
+output5_detail <- joined_data %>%
+  filter(
+    Age < 30,
+    Last_Promotion_Year %in% c(2023, 2024)
+  ) %>%
+  select(Employee_ID, Name, Age, Department_Name, Training_Completed, Last_Promotion_Year)
+
+output5_detail
+```
+
+## **SECTION C DATA VISUALIZATION**
+
+### **Assumption: We are still in the HR context, hence the 5 chosen graphs below.**
+
+### Visualization 1: Experience vs. Salary Across Departments
+
+This scatter plot with trend lines shows the relationship between years of experience and salary within each department. Key insights include:
+
+-   The slope of each trend line indicates the "return on experience" within each department
+
+-   Departments like Engineering and Finance typically show steeper slopes, suggesting better compensation for experienced employees
+
+-   You can identify potential salary inequities where employees with similar experience levels receive substantially different compensation
+
+-   Outliers may represent high performers, specialist roles, or potential compensation issues
+
+This visualization can help HR make data-driven decisions about compensation structure and identify whether experience is appropriately valued across all departments.
+
+```{r}
+# 1. VISUALIZATION 1: Relationship between Experience and Salary by Department
+p1 <- ggplot(joined_data, aes(x = Years_of_Experience, y = Salary, color = Department_Name)) +
+  geom_point(size = 3, alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, linetype = "dashed") +
+  scale_color_brewer(palette = "Set1") +
+  labs(title = "Experience vs. Salary Across Departments",
+       subtitle = "Analysis of how experience influences compensation by department",
+       x = "Years of Experience",
+       y = "Annual Salary ($)",
+       color = "Department") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+    plot.subtitle = element_text(size = 12, color = "darkgrey", hjust = 0.5),
+    legend.position = "right",
+    legend.title = element_text(face = "bold"),
+    axis.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  ) +
+  scale_y_continuous(labels = scales::dollar_format()) #Assuming it is in dollars
+
+print(p1)
+```
+
+### Visualization 2: Performance Rating Distribution by Age Group
+
+This proportional stacked bar chart reveals how performance ratings are distributed across different age groups (career stages). The visualization:
+
+-   Shows whether performance evaluation may be influenced by age or career stage
+
+-   Identifies which age groups have the highest proportion of excellent performers
+
+-   Highlights age cohorts that might benefit from additional development support
+
+-   Helps detect potential age-related biases in performance evaluation
+
+This information can guide targeted career development programs and ensure fair performance assessment practices across all age groups.
+
+```{r}
+p2 <- ggplot(joined_data, aes(x = Age_Group, fill = Performance_Rating)) +
+  geom_bar(position = "fill") +
+  scale_fill_manual(values = c("Excellent" = "#1a9850", 
+                               "Good" = "#91cf60", 
+                               "Average" = "#ffffbf", 
+                               "Poor" = "#d73027")) +
+  labs(title = "Performance Rating Distribution by Age Group",
+       subtitle = "Examining how performance varies across different career stages",
+       x = NULL,
+       y = "Proportion",
+       fill = "Performance Rating") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14, hjust = 0.5), 
+    plot.subtitle = element_text(size = 12, color = "darkgrey", hjust = 0.5), 
+    legend.position = "right",
+    legend.title = element_text(face = "bold"),
+    axis.title = element_text(face = "bold"),
+    axis.text.x = element_text(angle = 20, hjust = 0.5, size = 6.8),
+    panel.grid.minor = element_blank()
+  ) +
+  scale_y_continuous(labels = scales::percent_format())
+
+# Print with larger dimensions
+ggsave("performance_by_age.png", p2, width = 10, height = 7, dpi = 300)
+print(p2)
+```
+
+### Visualization 3: Attrition Risk Heat-map
+
+This heat-map displays the percentage of employees at high attrition risk by department and performance rating. The intensity of the red color indicates higher risk percentages. The visualization:
+
+-   Immediately identifies the most critical retention risk areas (bright red tiles)
+
+-   Shows whether high performers or low performers are more likely to leave in each department
+
+-   Helps prioritize retention efforts where they're most needed
+
+-   Can guide compensation and engagement strategies for specific employee segments
+
+This visualization is particularly valuable for proactive talent retention planning.
+
+```{r}
+p3 <- joined_data %>%
+  group_by(Department_Name, Performance_Rating, Attrition_Risk) %>%
+  summarise(Count = n(), .groups = "drop") %>%
+  group_by(Department_Name, Performance_Rating) %>%
+  mutate(Percentage = Count / sum(Count) * 100) %>%
+  filter(Attrition_Risk == "High") %>%
+  ggplot(aes(x = Performance_Rating, y = Department_Name, fill = Percentage)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(low = "white", high = "#d73027") +
+  geom_text(aes(label = sprintf("%.1f%%", Percentage)), 
+            color = ifelse(joined_data %>%
+                           group_by(Department_Name, Performance_Rating, Attrition_Risk) %>%
+                           summarise(Count = n(), .groups = "drop") %>%
+                           group_by(Department_Name, Performance_Rating) %>%
+                           mutate(Percentage = Count / sum(Count) * 100) %>%
+                           filter(Attrition_Risk == "High") %>%
+                           pull(Percentage) > 50, "white", "black")) +
+  labs(title = "High Attrition Risk by Department and Performance",
+       subtitle = "Percentage of employees at high risk of leaving by department and performance level",
+       x = NULL,
+       y = NULL,
+       fill = "% At High Risk") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+    plot.subtitle = element_text(size = 12, color = "darkgrey", hjust = 0.5),
+    legend.position = "right",
+    legend.title = element_text(face = "bold"),
+    axis.text = element_text(face = "bold"),
+    panel.grid = element_blank()
+  )
+
+print(p3)
+```
+
+### Visualization 4: Training Completion by Department and Attrition Risk
+
+This faceted bar chart breaks down training completion status by department and attrition risk level. The visualization:
+
+-   Shows the connection between training completion and attrition risk across departments
+
+-   Identifies departments with significant training gaps
+
+-   Reveals whether incomplete training correlates with higher attrition risk
+
+-   Helps HR target training initiatives to potentially reduce turnover
+
+This insight can support more effective training budget allocation and improve overall workforce development strategy.
+
+```{r}
+# 4. VISUALIZATION 4: Training Completion by Department and Attrition Risk
+p4 <- ggplot(joined_data, aes(x = Department_Name, fill = Training_Completed)) +
+  geom_bar(position = "dodge") +
+  facet_wrap(~ Attrition_Risk, nrow = 1) +
+  scale_fill_manual(values = c("Yes" = "#1a9850", "No" = "#d73027")) +
+  labs(title = "Training Completion Status by Department and Attrition Risk",
+       subtitle = "Identifying departments with training gaps and potential retention issues",
+       x = NULL,
+       y = "Number of Employees",
+       fill = "Training Completed") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+    plot.subtitle = element_text(size = 12, color = "darkgrey", hjust = 0.5),
+    legend.position = "top",
+    legend.title = element_text(face = "bold"),
+    axis.title = element_text(face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.minor = element_blank(),
+    strip.background = element_rect(fill = "#f0f0f0"),
+    strip.text = element_text(face = "bold")
+  )
+
+print(p4)
+```
+
+### Visualization 5: Salary Distribution by Performance Rating and Promotion Recency
+
+This boxplot compares salary distributions between recently promoted employees and those with older promotions across performance categories. The visualization:
+
+-   Shows whether recent promotions are accompanied by appropriate salary adjustments
+
+-   Reveals if there's pay equity between recently promoted employees and longer-tenured staff
+
+-   Identifies whether top performers receive suitable financial rewards with promotions
+
+-   Highlights potential compression issues where new promotions aren't differentiated in pay
+
+This analysis can help ensure the organization's promotion and compensation practices are effectively aligned.
+
+```{r}
+# 5. VISUALIZATION 5: Recent Promotions and Salary by Performance Rating
+p5 <- joined_data %>%
+  mutate(Recent_Promotion = ifelse(Last_Promotion_Year >= 2023, "Recent (2023-2024)", "Older (Before 2023)")) %>%
+  ggplot(aes(x = Performance_Rating, y = Salary, fill = Recent_Promotion)) +
+  geom_boxplot(alpha = 0.8) +
+  scale_fill_manual(values = c("Recent (2023-2024)" = "#1a9850", "Older (Before 2023)" = "#d73027")) +
+  labs(title = "Salary Distribution by \n Performance Rating and Promotion Recency",
+       subtitle = "Analyzing compensation patterns for recently promoted employees vs others",
+       x = NULL,
+       y = "Annual Salary ($)",
+       fill = "Promotion Status") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+    plot.subtitle = element_text(size = 12, color = "darkgrey", hjust = 0.5),
+    legend.position = "right",
+    legend.title = element_text(face = "bold"),
+    axis.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  ) +
+  scale_y_continuous(labels = scales::dollar_format())
+
+print(p5)
+```

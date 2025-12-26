@@ -1,0 +1,686 @@
+---
+title: "Assessment 3: Business Case Analysis & Data-Driven Strategy"
+Group: 66
+Members: "Ryuta Minami, Shunnosuke Takei,Shadman Sharar Pervez,AHMAD SYAHMI AQIL"
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(plotly)
+library(shiny)
+library(shinydashboard)
+library(readr)
+```
+
+# **1. Article Selection**
+
+## Special Report: Inside Intel, CEO Pat Gelsinger fumbled the revival of an American icon
+
+Cherney, M. A., & Team. (2024, October 29). Special Report: Inside Intel, CEO Pat Gelsinger fumbled the revival of an American icon. Reuters. <https://www.reuters.com/technology/inside-intel-ceo-pat-gelsinger-fumbled-revival-an-american-icon-2024-10-29>
+
+# **2. Problem Identification:**
+
+## **Intel Corporation's Struggles (2022--2025): A Report on Internal and External Challenges**
+
+## **1. Introduction**
+
+This report summarizes the key internal and external challenges faced by Intel Corporation between 2022 and 2025. Drawing from the Reuters special report titled "Inside Intel, CEO Pat Gelsinger fumbled the revival of an American icon" (Cherney et al., 2024), the report outlines how strategic missteps, manufacturing delays, and rising competition have impacted Intel's market standing and future prospects.
+
+## **2. Internal Challenges**
+
+### **2.1 Leadership Missteps**
+
+Under CEO Pat Gelsinger's leadership, Intel sought to reassert its dominance in semiconductor manufacturing. However, the Reuters investigation revealed that:
+
+-   Gelsinger inherited a company that had already lost its technological edge in chip manufacturing.
+
+-   His public remarks, including calling Taiwan "not a stable place," damaged key partnerships. TSMC reportedly canceled a wafer-price discount for Intel following the comment.
+
+### **2.2 Delays in Chip Manufacturing**
+
+Intel's efforts to catch up with rivals were hindered by setbacks such as:
+
+-   Technical difficulties in the rollout of the 18A chip manufacturing process.
+
+-   Years-long delays in transitioning to the 7nm process, which cost the company critical time and market share.
+
+### **2.3 Financial Strain and Misallocation**
+
+Despite declining revenue, Intel's capital expenditure and headcount increased sharply, leading to:
+
+-   Inefficiencies in cost management.
+
+-   Budget pressures that later resulted in pay cuts, bonus freezes, and factory delay announcements.
+
+## **3. External Challenges**
+
+### **3.1 Market Share Loss to Rivals**
+
+Intel's sluggish innovation allowed rivals to surge:
+
+-   **AMD** leveraged TSMC's advanced nodes to produce superior Ryzen and EPYC processors, rapidly gaining market share in both consumer and enterprise markets.
+
+-   **Nvidia** took a commanding lead in the AI accelerator market. The success of AI tools like ChatGPT further emphasized Intel's lag in this sector.
+
+### **3.2 Eroding Customer Base**
+
+Major cloud service providers, such as Amazon and Google, began designing their own custom chips, reducing reliance on Intel's server CPUs.
+
+### **3.3 Geopolitical Pressures**
+
+Geopolitical instability and U.S.--China trade tensions further complicated Intel's global operations, particularly affecting supply chain reliability and international partnerships.
+
+## **4. Consequences**
+
+-   Intel's annual revenue and stock performance weakened significantly.
+
+-   Cost-cutting measures, including job cuts and delayed infrastructure projects, were implemented.
+
+-   CEO Pat Gelsinger resigned in 2024, succeeded by Lip-Bu Tan, signaling a leadership change aimed at rebooting the company's strategy.
+
+## **5. Outlook**
+
+Intel's future now hinges on:
+
+-   Successfully executing its IDM 2.0 strategy and regaining competitiveness in advanced manufacturing.
+
+-   Leveraging CHIPS Act funding to complete major U.S. fab projects.
+
+-   Rebuilding trust with key partners and competing effectively in the AI and cloud computing markets.\
+
+While the appointment of a new CEO signals a shift in direction, the company faces an uphill battle in overcoming internal inefficiencies and outpacing aggressive compettion.
+
+# 3. Dataset Overview
+
+```{r}
+# Load and prepare data
+intel = read_csv("intel_data.csv") |> drop_na()
+intel$Date = as.Date(paste0(intel$Date, "-01"))  # "2009-03" → "2009-03-01"
+
+# Basic data overview
+cat("=== INTEL DATASET OVERVIEW ===\n")
+cat("Dataset dimensions:", dim(intel), "\n")
+cat("Date range:", as.character(range(intel$Date)), "\n")
+cat("Number of quarters:", nrow(intel), "\n\n")
+
+# Summary statistics
+print(summary(intel))
+
+# Data structure
+cat("\n=== DATA STRUCTURE ===\n")
+str(intel)
+```
+
+This dataset provides quarterly financial data for Intel spanning from December 2009 to March 2025, covering a total of 62 quarters (15.5 years) and containing 9 key financial indicators.
+
+**Dataset Overview Time Span:** December 1, 2009 -- March 1, 2025
+
+**Observations:** 62 quarterly data points
+
+**Variables (Columns):** 9 financial metrics
+
+| **Metric**                            | **Description**                                                                           |
+|---------------------------------------|-------------------------------------------------------------------------------------------|
+| **Research and Development Expenses** | Spending on R&D, ranging from **5.65 to 17.53** billion                                   |
+| **Current Ratio**                     | Measure of short-term liquidity (Assets / Liabilities), ranging from **1.20 to 3.39**     |
+| **Net Profit Margin (%)**             | Profitability ratio, ranging from **-36.19% to 31.68%** (note the outlier on the low end) |
+| **Long Term Debt**                    | Total long-term liabilities, ranging from **2.05 to 48.84** billion                       |
+| **Cash on Hand**                      | Cash reserves, ranging from **10.46 to 38.70** billion                                    |
+| **Operating Income**                  | Income from operations, ranging from **-11.68 to 25.98** billion                          |
+| **Gross Profit**                      | Revenue minus cost of goods sold, ranging from **16.80 to 45.70** billion                 |
+| **Revenue**                           | Total income, ranging from **35.13 to 79.02** billion                                     |
+
+### Observations
+
+-   **Growth Trend**: Revenue, gross profit, and R&D expenses all show upward trends over the 15-year span.
+
+-   **Volatility**: Net profit margin and operating income show occasional drops, suggesting a few turbulent quarters.
+
+-   **Leverage**: Long-term debt has a wide range, suggesting Intel has adjusted its financial leverage over time.
+
+-   **Liquidity**: The current ratio remains consistently above 1.2, showing Intel generally maintained the ability to cover its short-term liabilities.
+
+```{r}
+intel_revenue = read.csv("intel_revenue_history.csv")
+
+# Basic data overview
+cat("=== INTEL Revenue DATASET OVERVIEW ===\n")
+cat("Dataset dimensions:", dim(intel_revenue), "\n")
+cat("Number of quarters:", nrow(intel_revenue), "\n\n")
+
+# Summary statistics
+print(summary(intel_revenue))
+
+# Data structure
+cat("\n=== DATA STRUCTURE ===\n")
+str(intel_revenue)
+```
+
+## Intel Revenue Dataset Summary
+
+### General Overview
+
+-   **Dataset Dimensions:** 20 rows × 9 columns\
+-   **Period Covered:** 20 quarters (latest is Q4/2024)\
+-   **Primary Focus:** Quarterly revenue breakdown across Intel's key business segments
+
+------------------------------------------------------------------------
+
+### Variables and Descriptions
+
+| **Segment**               | **Description**                                                                               | **Range (in billions USD)** |
+|---------------------------|-----------------------------------------------------------------------------------------------|-----------------------------|
+| **Client Computing**      | Traditional PC/laptop-related revenue.                                                        | 27.06 -- 41.50              |
+| **Foundry Services**      | Semiconductor manufacturing services (notable growth in recent quarters).                     | 0.00 -- 17.57               |
+| **Data Center**           | Revenue from server and enterprise cloud computing.                                           | 12.72 -- 27.71              |
+| **Network and Edge**      | Revenue from networking and edge computing devices.                                           | 0.00 -- 8.87                |
+| **Other**                 | Miscellaneous/legacy categories.                                                              | 0.20 -- 8.02                |
+| **Accelerated Computing** | Revenue from accelerators (e.g., GPUs, AI chips); mostly zero, a few recent entries observed. | 0.00 -- 0.837               |
+| **Internet of Things**    | Smart device and embedded system revenue; mostly inactive.                                    | 0.00 -- 4.00                |
+| **Mobileye**              | Revenue from ADAS (Advanced Driver-Assistance Systems) and autonomous driving tech.           | 0.00 -- 2.08                |
+
+### Observations
+
+-   **Client Computing** is consistently the **largest revenue driver** across quarters.
+-   **Foundry Services** has seen a **rapid increase**, signaling strategic investment and future focus.
+-   Segments like **Accelerated Computing**, **IoT**, and **Mobileye** show **early-stage or niche activity**.
+-   **Internet of Things** remains largely dormant in this dataset, suggesting either paused operations or a pivot.
+-   The dataset includes **some quarters with zero revenue** in smaller segments, likely due to product lifecycle, restructuring, or future scaling efforts.
+
+```{r}
+x86_market_share = read.csv("x86_market_share.csv")
+
+# Basic data overview
+cat("=== MARKET SHARE DATASET OVERVIEW ===\n")
+cat("Dataset dimensions:", dim(x86_market_share), "\n")
+cat("Number of quarters:", nrow(x86_market_share), "\n\n")
+
+# Summary statistics
+print(summary(x86_market_share))
+
+# Data structure
+cat("\n=== DATA STRUCTURE ===\n")
+str(x86_market_share)
+```
+
+## x86 Market Share Dataset Summary
+
+### General Overview
+
+-   **Dataset Dimensions:** 21 rows × 7 columns\
+-   **Period Covered:** 21 quarters (latest is Q1/2025)\
+-   **Focus:** Market share percentages of **x86 processors** by **AMD** and **Intel** across **desktop**, **mobile**, and **server** segments.
+
+### Variables and Descriptions
+
+| **Segment**     | **Description**                          | **AMD Range (%)** | **Intel Range (%)** |
+|-----------------|------------------------------------------|-------------------|---------------------|
+| **x86 Desktop** | Market share in desktop CPUs.            | 13.9 -- 28.7      | 71.3 -- 86.1        |
+| **x86 Mobile**  | Market share in laptop/mobile CPUs.      | 15.7 -- 24.8      | 75.2 -- 84.3        |
+| **x86 Server**  | Market share in data center/server CPUs. | 5.1 -- 27.2       | 72.8 -- 94.9        |
+
+### Observations
+
+-   **Intel maintains dominance** across all segments, but **AMD is gaining ground**, especially in the **server segment**, where its share has increased from **5.1% to 27.2%**.
+-   **Desktop and mobile markets** show more **stability** in Intel's lead, but with visible **fluctuations in AMD's growth** over time.
+-   **Recent quarters (2024--2025)** show **AMD peaking in desktop (28.7%)** and **server (27.2%)**, signaling competitive momentum.
+-   Overall, AMD shows **upward trends**, while Intel remains strong but has seen **gradual share erosion** in some areas.
+
+# 4. Data Analysis
+
+## 4.1 Revenue and Profit Trends
+
+### Quarterly Revenue
+
+The code below plots a line graph to show Intel's revenue over the last 15 years. As seen in the visualization below, there seems to be a steady growth in revenue until around mid 2022, followed by a sudden drop across the span of 2 years before stabilizing.
+
+```{r}
+intel |> 
+  ggplot(aes(Date, Revenue)) +
+  geom_area(fill = "lightblue", alpha = 0.3) +  # Area under the curve
+  geom_line(color = "blue", linewidth = 1.2) +
+  geom_point(size = 2, color = "darkblue", alpha = 0.7) +  # Add points at each data point
+  geom_smooth(method = "loess", se = FALSE, color = "red", linetype = "dashed", linewidth = 0.8) +  # Add trend line
+  scale_y_continuous(labels = scales::dollar_format(suffix = "B", prefix = "$")) +
+  labs(
+    title = "Intel Quarterly Revenue (2009-2025)",
+    subtitle = "Showing overall trend with quarterly data points",
+    y = "Revenue (Billion USD)",
+    x = "Date",
+    caption = "Data source: Intel financial reports"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "gray30"),
+    axis.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+```
+
+### Operating Income
+
+The code below shows Intel's operating income for the past 15 years. Similar to revenue, a sudden drop can be seen at around mid 2022 and going in the negatives in recent years.
+
+```{r}
+intel |> 
+  ggplot(aes(Date, `Operating Income`)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray40") +  # Zero reference line
+  geom_ribbon(aes(ymin = pmin(`Operating Income`, 0), ymax = 0), 
+              fill = "mistyrose", alpha = 0.7) +  # Highlight negative values
+  geom_ribbon(aes(ymin = 0, ymax = pmax(`Operating Income`, 0)), 
+              fill = "lightgreen", alpha = 0.5) +  # Highlight positive values
+  geom_line(color = "darkred", linewidth = 1.2) +
+  geom_point(size = 2, color = "red4", alpha = 0.7) +
+  scale_y_continuous(labels = scales::dollar_format(suffix = "B", prefix = "$")) +
+  labs(
+    title = "Intel Operating Income Trends (2009-2025)",
+    subtitle = "Note periods of negative operating income in red shading",
+    y = "Operating Income (Billion USD)",
+    x = "Year",
+    caption = "Data source: Intel financial reports"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "gray30"),
+    axis.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+```
+
+### Revenue Breakdown by Segment
+
+A stacked bar chart that provides a breakdown of Intel's revenue into different business segments. The highest earning segments have historically always been the client computing and data center segments (both centered around selling processors and chips), but have started to decline over the last 5 years. On the other hand, foundry services (service that involves manufacturing processors for other companies) have seen a rapid increase in revenue during these years.
+
+```{r}
+# Make sure intel_revenue has been properly transformed
+intel_revenue$Date = factor(intel_revenue$Date, levels = rev(intel_revenue$Date))
+intel_revenue = pivot_longer(intel_revenue, -Date, names_to = "Category", values_to = "Value")
+
+# Create the summary data first
+total_by_date = intel_revenue %>% 
+  group_by(Date) %>% 
+  summarize(Total = sum(Value, na.rm = TRUE))
+
+# Filter for every 4th quarter
+labeled_dates = total_by_date %>%
+  filter(as.integer(factor(Date)) %% 4 == 0)
+
+# Stacked bar chart
+ggplot(intel_revenue, aes(x = Date, y = Value, fill = Category)) +
+  geom_bar(stat = "identity", position = "stack", width = 0.7) +
+  scale_fill_brewer(palette = "Spectral", direction = -1) +
+  scale_y_continuous(labels = scales::dollar_format(suffix = "B", prefix = "$")) +
+  geom_text(data = labeled_dates,
+            aes(x = Date, y = Total + 2, label = paste0("$", round(Total), "B")),
+            inherit.aes = FALSE,
+            color = "black", fontface = "bold", size = 3) +
+  labs(title = "Intel Revenue by Business Segment (2020-2024)",
+       subtitle = "Client Computing remains dominant while Foundry Services grows rapidly",
+       x = NULL,
+       y = "Quarterly Revenue (Billions USD)",
+       fill = "Business Segment",
+       caption = "Source: Intel quarterly reports") +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "gray30"),
+    axis.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank(),
+    legend.text = element_text(size = 8)
+  )
+```
+
+## 4.2 Profitability Analysis
+
+### Net Profit Margin
+
+Plots Intel's net profit margin across the last 15 years. Maintains a steady 20% margin until recently, dropping all the way down to nearly -40% in 2025.
+
+```{r}
+# Calculate the mean profit margin for reference line
+mean_profit = mean(intel$`Net Profit Margin`, na.rm = TRUE)
+
+intel |> 
+  ggplot(aes(Date, `Net Profit Margin`)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray40") +  # Zero line
+  geom_hline(yintercept = mean_profit, linetype = "dotted", color = "purple") +  # Average line
+  geom_ribbon(aes(ymin = pmin(`Net Profit Margin`, 0), ymax = 0), 
+              fill = "mistyrose", alpha = 0.7) +  # Negative values
+  geom_ribbon(aes(ymin = 0, ymax = pmax(`Net Profit Margin`, 0)), 
+              fill = "lightgreen", alpha = 0.5) +  # Positive values
+  geom_line(color = "darkgreen", linewidth = 1.2) +
+  geom_point(size = 2, color = "forestgreen", alpha = 0.7) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +  # Format as percentage
+  labs(
+    title = "Intel Net Profit Margin Trends (2009-2025)",
+    subtitle = "Dotted purple line shows historical average profit margin",
+    y = "Net Profit Margin (%)",
+    x = "Year",
+    caption = "Data source: Intel financial reports"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "gray30"),
+    axis.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+```
+
+### Revenue vs Operating Income
+
+Shows the correlation between revenue and operating income. Typically shows a positive correlation as evident in the visualization below. However, approaching recent years, there seems to be an anomaly since the operating income is significantly lower in recent years for the same amount of revenue (i.e. \$70B revenue -\> \$23B OI pre-2020 vs \$10B OI in 2022-2023).
+
+```{r}
+intel |> 
+  # Create a year variable for coloring points
+  mutate(Year = lubridate::year(Date)) |>
+  ggplot(aes(Revenue, `Operating Income`, color = Year)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray40") +
+  geom_point(size = 3, alpha = 0.8) +
+  geom_smooth(method = "lm", color = "black", fill = "gray80") +
+  # Identify outliers or interesting points
+  geom_text(data = ~ filter(., `Operating Income` < -10 | `Operating Income` > 20), 
+            aes(label = format(Date, "%Y-%m")), 
+            nudge_y = 1, size = 3) +
+  scale_color_viridis_c() +
+  scale_x_continuous(labels = scales::dollar_format(suffix = "B", prefix = "$")) +
+  scale_y_continuous(labels = scales::dollar_format(suffix = "B", prefix = "$")) +
+  labs(
+    title = "Relationship Between Intel's Revenue and Operating Income",
+    subtitle = "Points colored by year show temporal relationship",
+    x = "Revenue (Billion USD)",
+    y = "Operating Income (Billion USD)",
+    color = "Year",
+    caption = "Data source: Intel financial reports"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "gray30"),
+    axis.title = element_text(face = "bold")
+  )
+```
+
+## 4.3 Financial Risk Indicators
+
+### Cash on Hand vs Long-Term Debt
+
+Shows Intel's financial risk profile over the years. Up until 2015 they maintained a pretty low risk profile, but since then their debt has begun to exceed their cash reserves. As of 2025, their debt exceeds their cash reserves by nearly \$30B.
+
+```{r}
+# Financial Risk Chart with annotations
+intel |> 
+  ggplot(aes(Date)) +
+  # Add shaded areas to highlight the gap
+  geom_ribbon(aes(ymin = pmin(`Cash on Hand`, `Long Term Debt`), 
+                  ymax = `Cash on Hand`), 
+              fill = "lavender", alpha = 0.5) +
+  geom_ribbon(aes(ymin = pmin(`Cash on Hand`, `Long Term Debt`), 
+                  ymax = `Long Term Debt`), 
+              fill = "bisque", alpha = 0.5) +
+  # Add reference line where cash = debt
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "gray50", alpha = 0.7) +
+  # Main lines
+  geom_line(aes(y = `Cash on Hand`, color = "Cash on Hand"), linewidth = 1.2) +
+  geom_line(aes(y = `Long Term Debt`, color = "Long Term Debt"), linewidth = 1.2) +
+  # Add points for emphasis
+  geom_point(aes(y = `Cash on Hand`, color = "Cash on Hand"), size = 2, alpha = 0.7) +
+  geom_point(aes(y = `Long Term Debt`, color = "Long Term Debt"), size = 2, alpha = 0.7) +
+  # Highlight crossover point
+  geom_vline(xintercept = as.Date("2022-06-01"), linetype = "dotted", color = "red3", alpha = 0.8) +
+  # Annotations
+  annotate("text", x = as.Date("2022-06-01"), y = 42, 
+           label = "Debt exceeds cash\nJun 2022", 
+           color = "red3", size = 3.5, hjust = -0.1) +
+  scale_color_manual(values = c("Cash on Hand" = "purple4", "Long Term Debt" = "darkorange3"),
+                     name = "") +
+  scale_y_continuous(labels = scales::dollar_format(suffix = "B", prefix = "$")) +
+  labs(
+    title = "Intel's Financial Risk Profile (2009-2025)",
+    subtitle = "Cash reserves vs Long-term debt obligations",
+    y = "Billion USD", 
+    x = "Date",
+    caption = "Source: Intel financial statements"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "top",
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "gray30"),
+    axis.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+```
+
+## 4.4 Investment Efficiency
+
+### R&D Investment Intensity
+
+A graph that visualizes the percentage of revenue being invested into R&D. While the historical average has been at around 20%, in recent years, their R&D expenses continued to increase despite the huge drop in revenue, resulting in a much higher percentage being invested.
+
+```{r}
+# Calculate the mean R&D ratio
+mean_rnd_ratio = mean(intel$`Research and Development Expenses` / intel$Revenue)
+
+intel |> 
+  mutate(rnd_ratio = `Research and Development Expenses` / Revenue,
+         year = lubridate::year(Date)) |>
+  ggplot(aes(Date, rnd_ratio)) +
+  # Add reference line for average
+  geom_hline(yintercept = mean_rnd_ratio, linetype = "dashed", color = "gray40") +
+  # Add area under the line
+  geom_area(fill = "firebrick", alpha = 0.2) +
+  # Add main line
+  geom_line(color = "firebrick", linewidth = 1.2) +
+  # Add annotations
+  annotate("text", x = as.Date("2020-01-01"), y = mean_rnd_ratio + 0.005,
+           label = paste0("Historical average: ", scales::percent(mean_rnd_ratio, accuracy = 0.1)),
+           hjust = 0, color = "gray40") +
+  annotate("text", x = as.Date("2023-01-01"), y = 0.27, 
+           label = "Increased R&D investment\ndespite revenue challenges", 
+           color = "darkorange", size = 3,) +
+  # Use viridis color scale for points
+  scale_color_viridis_c() +
+  # Format y-axis as percentage
+  scale_y_continuous(labels = scales::percent_format()) +
+  labs(
+    title = "Intel's R&D Investment Intensity (2009-2025)",
+    subtitle = "Research & Development expenses as a percentage of revenue",
+    y = "R&D Expenses / Revenue", 
+    x = "Date",
+    color = "Year",
+    caption = "Source: Intel financial statements"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "gray30"),
+    axis.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+```
+
+## 4.5 Market Position Analysis
+
+### x86 Market Share vs AMD
+
+Side by side bar graph that showcases the x86 processor market share between Intel and AMD. AMD has continued to gain on Intel, especially in the server CPU market, where AI chips have rapidly increased in demand, which Intel is drastically behind on in terms of research.
+
+```{r}
+x86_market_share$Quarter = factor(x86_market_share$Quarter, levels = rev(x86_market_share$Quarter))
+
+desktop = x86_market_share %>%
+  select(Quarter, AMD = x86_Desktop_AMD, Intel = x86_Desktop_Intel) %>%
+  pivot_longer(-Quarter, names_to = "Company", values_to = "Share")
+
+mobile = x86_market_share %>%
+  select(Quarter, AMD = x86_Mobile_AMD, Intel = x86_Mobile_Intel) %>%
+  pivot_longer(-Quarter, names_to = "Company", values_to = "Share")
+
+server = x86_market_share %>%
+  select(Quarter, AMD = x86_Server_AMD, Intel = x86_Server_Intel) %>%
+  pivot_longer(-Quarter, names_to = "Company", values_to = "Share")
+
+company_colors = c("AMD" = "#ED1C24", "Intel" = "#0071C5")
+x_labels = levels(x86_market_share$Quarter)
+x_labels = x_labels[grepl("Q1", x_labels)]
+```
+
+```{r}
+desktop_plot = ggplot(desktop, aes(x = Quarter, y = Share, fill = Company)) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.7) +
+  geom_hline(yintercept = 50, linetype = "dashed", color = "gray50") +
+  geom_rect(data = desktop %>% 
+              filter(Quarter == levels(Quarter)[1]) %>%
+              select(Quarter) %>% distinct(),
+            aes(xmin = as.numeric(factor(Quarter)) - 0.5, 
+                xmax = as.numeric(factor(Quarter)) + 0.5,
+                ymin = 0, ymax = 100),
+            fill = "gray90", alpha = 0.3, inherit.aes = FALSE) +
+  scale_fill_manual(values = company_colors) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1),
+                     breaks = c(0, 25, 50, 75, 100)) +
+  scale_x_discrete(breaks = x_labels) +
+  labs(
+    title = "Desktop CPU Market Share: Intel vs AMD (2020-2025)",
+    subtitle = "Intel maintains dominance but AMD has grown to nearly 30% share",
+    x = NULL,
+    y = "Market Share (%)",
+    fill = "Company",
+    caption = "Source: Mercury Research, IDC"
+  ) +
+  annotate("text", x = 16, y = 85, 
+           label = "Intel maintains >70% market share\ndespite AMD's gains", 
+           size = 3, fontface = "italic", color = "black") +
+  theme_minimal() +
+  theme(
+    legend.position = "top",
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "gray30"),
+    axis.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+
+# 2. Mobile Market Share Chart
+mobile_plot = ggplot(mobile, aes(x = Quarter, y = Share, fill = Company)) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.7) +
+  geom_hline(yintercept = 50, linetype = "dashed", color = "gray50") +
+  geom_rect(data = mobile %>% 
+              filter(Quarter == levels(Quarter)[1]) %>%
+              select(Quarter) %>% distinct(),
+            aes(xmin = as.numeric(factor(Quarter)) - 0.5, 
+                xmax = as.numeric(factor(Quarter)) + 0.5,
+                ymin = 0, ymax = 100),
+            fill = "gray90", alpha = 0.3, inherit.aes = FALSE) +
+  scale_fill_manual(values = company_colors) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1),
+                     breaks = c(0, 25, 50, 75, 100)) +
+  scale_x_discrete(breaks = x_labels) +
+  labs(
+    title = "Mobile CPU Market Share: Intel vs AMD (2020-2025)",
+    subtitle = "Most stable segment with modest AMD gains",
+    x = NULL,
+    y = "Market Share (%)",
+    fill = "Company",
+    caption = "Source: Mercury Research, IDC"
+  ) +
+  annotate("text", x = 17, y = 85, 
+           label = "AMD has maintained ~20%\nshare in recent years", 
+           size = 3, fontface = "italic", color = "black") +
+  theme_minimal() +
+  theme(
+    legend.position = "top",
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "gray30"),
+    axis.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+
+# 3. Server Market Share Chart
+server_plot = ggplot(server, aes(x = Quarter, y = Share, fill = Company)) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.7) +
+  geom_hline(yintercept = 50, linetype = "dashed", color = "gray50") +
+  geom_rect(data = server %>% 
+              filter(Quarter == levels(Quarter)[1]) %>%
+              select(Quarter) %>% distinct(),
+            aes(xmin = as.numeric(factor(Quarter)) - 0.5, 
+                xmax = as.numeric(factor(Quarter)) + 0.5,
+                ymin = 0, ymax = 100),
+            fill = "gray90", alpha = 0.3, inherit.aes = FALSE) +
+  scale_fill_manual(values = company_colors) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1),
+                     breaks = c(0, 25, 50, 75, 100)) +
+  scale_x_discrete(breaks = x_labels) +
+  labs(
+    title = "Server CPU Market Share: Intel vs AMD (2020-2025)",
+    subtitle = "AMD has seen dramatic growth in this high-margin segment",
+    x = NULL,
+    y = "Market Share (%)",
+    fill = "Company",
+    caption = "Source: Mercury Research, IDC"
+  ) +
+  annotate("text", x = 17, y = 85, 
+           label = "AMD's server share\nquadrupled since 2020", 
+           size = 3, fontface = "italic", color = "black") +
+  theme_minimal() +
+  theme(
+    legend.position = "top",
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "gray30"),
+    axis.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+
+# Display each plot separately
+desktop_plot
+mobile_plot
+server_plot
+```
+
+# 5. Proposed Solution
+
+To address Intel Corporation's multifaceted challenges between 2022 and 2025---including deteriorating profitability, declining market share, and strategic misalignment---we developed an interactive R Shiny dashboard titled **"Intel Strategic Analysis Dashboard."** This dashboard integrates financial, operational, and market share data to support evidence-based executive decision-making.
+
+### Key Features of the Dashboard
+
+1.  **Executive Summary**\
+    Presents a high-level overview of Intel's critical issues using visual KPIs and a net profit margin trend line. This tab highlights the severity of Intel's ongoing crisis in an accessible format for decision-makers.
+
+2.  **Financial Performance Analysis**\
+    Includes detailed visualizations of Intel's declining net profit margins, shrinking operating income, and R&D expenditure efficiency. These plots illustrate how Intel's financial foundation has weakened, particularly post-2022, despite maintaining high R&D investment (\~\$16B annually).
+
+3.  **Market Share Analysis**\
+    Offers animated and interactive visualizations comparing Intel's market share against AMD across desktop, mobile, and server segments over time. These charts clearly show that Intel's erosion of dominance---particularly in the server segment---aligns with AMD's performance surge from 5% to 27% in servers since 2020.
+
+4.  **Revenue Breakdown**\
+    Visualizes revenue by business segment (e.g., Client Computing, Data Center, Foundry Services), revealing Intel's over-dependence on legacy segments. Notably, Client Computing contributes \~60--70% of total revenue, yet faces secular decline due to weakening PC demand. Foundry Services, while growing (from \~\$0.3B to \$17.5B), has yet to offset these losses.
+
+5.  **Strategic Recommendations**\
+    Based on the insights above, we propose three actionable, data-driven strategies:
+
+    -   **Accelerate 18A Process Node Delivery**\
+        Prioritize fabrication resources toward 18A process node to regain technology leadership. This is critical to competing with TSMC and AMD, and avoiding further margin compression from product delays.
+
+    -   **Build Strategic Foundry Partnerships**\
+        Secure long-term manufacturing contracts with key industry players such as Apple, Nvidia, and AMD to stabilize Foundry revenue and reduce reliance on internal chip sales.
+
+    -   **Defend Server Market via AI Integration**\
+        Invest in AI/ML-optimized server chips and pursue M&A opportunities with AI-focused startups. This is Intel's most vulnerable high-margin segment, and even regaining 10% share (\~\$5B in potential annual revenue) could offset recent net losses.
+
+### Intended Impact
+
+This data-driven dashboard allows Intel's leadership to interactively explore critical financial and operational metrics, monitor competitive positioning, and simulate the impact of strategic decisions. By consolidating key intelligence into a single interface, it facilitates agile, informed responses to both internal inefficiencies and external threats.
+
+**Assumptions for practical implementation** include continued R&D funding above \$15B/year, timely access to EUV tooling, and executive commitment to restructuring. Overall, the dashboard serves as a practical, accessible tool to support Intel's turnaround and restore competitive momentum.
